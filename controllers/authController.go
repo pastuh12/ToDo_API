@@ -62,3 +62,7 @@ func (ctr *AuthController) Registration(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusOK, token)
 }
+
+func (ctr *AuthController) RenewTokens(ctx echo.Context) error {
+	return nil
+}
