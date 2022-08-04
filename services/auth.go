@@ -50,6 +50,9 @@ func (s *AuthService) LoginUser(ctx context.Context, user *models.AuthUser) (*To
 	}
 
 	token, err := s.CreateSession(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 
 	logrus.Info(token)
 
@@ -70,7 +73,7 @@ func (s *AuthService) CreateSession(ctx context.Context, id int) (*Token, error)
 	session.RefreshToken = token.RefreshToken
 	session.ExpiresAt = token.ExpiresAt
 
-	err = s.store.Authtorization.SetSession(ctx, &session)
+	err = s.store.Authtorization.CheckSession(ctx, &session)
 	if err != nil {
 		return nil, err
 	}

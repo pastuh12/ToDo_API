@@ -9,7 +9,7 @@ import (
 type AuthRepo interface {
 	CreateUser(context.Context, *models.User) (*models.User, error)
 	GetUser(context.Context, *models.AuthUser) (int, error)
-	SetSession(context.Context, *models.Session) error
+	CheckSession(context.Context, *models.Session) error
 	UpdateSession(context.Context, *models.Session) error
 }
 
