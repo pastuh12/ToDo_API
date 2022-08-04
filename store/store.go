@@ -24,14 +24,6 @@ func New(ctx context.Context, conf *config.Config) (*Store, error) {
 		return nil, errors.Wrap(err, "postgres connection failed")
 	}
 
-	//run migrations
-	// if pgDB != nil {
-	// 	log.Println("Running PostgreSQL migrations...")
-	// 	if err := MakePostgresMigrationsUp(conf); err != nil {
-	// 		return nil, errors.Wrap(err, "runPgMigrations failed")
-	// 	}
-	// }
-
 	//init Store
 	var store Store
 
