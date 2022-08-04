@@ -13,6 +13,7 @@ type Config struct {
 	PgURL            string
 	PgMigrationsPath string
 	HTTPAddr         string
+	SigningKey       string
 }
 
 var (
@@ -24,8 +25,9 @@ func New() *Config {
 	return &Config{
 		LogLevel:         getEnv("LOG_LEVEL", "debug"),
 		PgURL:            getEnv("PG_URL", "host=localhost dbname=todo_api sslmode=disable user=admin password=1111"),
-		PgMigrationsPath: getEnv("PG_MIGRATIONS_PATH", "../store/migration"),
+		PgMigrationsPath: getEnv("PG_MIGRATIONS_PATH", "../store/migrations"),
 		HTTPAddr:         getEnv("HTTP_ADDR", "localhost:8080"),
+		SigningKey:       getEnv("SIGNING_KEY", ""),
 	}
 }
 

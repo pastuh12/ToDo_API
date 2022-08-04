@@ -1,40 +1,47 @@
 package store
 
 import (
-	"database/sql"
+	"context"
 
+	"github.com/pkg/errors"
 	"github.com/todo_api/config"
-
-	_ "github.com/lib/pq" //...
+	"github.com/todo_api/store/postgres"
 )
 
 type Store struct {
-	config *config.Config
-	db     *sql.DB
+	Postgres *postgres.PostgresDB
+
+	Authtorization AuthRepo
+	Task           TaskRepo
+	Folder         FolderRepo
 }
 
-func New(config *config.Config) *Store {
-	return &Store{
-		config: config,
-	}
-}
+func New(ctx context.Context, conf *config.Config) (*Store, error) {
 
-func (s *Store) Open() error {
-	db, err := sql.Open("postgres", s.config.PgURL)
+	//connect to Postgres
+	pgDB, err := postgres.NewConnect(conf)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "postgres connection failed")
 	}
 
-	if err := db.Ping(); err != nil {
-		return err
+	//run migrations
+	// if pgDB != nil {
+	// 	log.Println("Running PostgreSQL migrations...")
+	// 	if err := MakePostgresMigrationsUp(conf); err != nil {
+	// 		return nil, errors.Wrap(err, "runPgMigrations failed")
+	// 	}
+	// }
+
+	//init Store
+	var store Store
+
+	if pgDB != nil {
+		store.Postgres = pgDB
+		store.Authtorization = postgres.NewAuthPostgres(pgDB)
+		// store.Folder = postgres.NewFolderPostgres(pgDB)
+		// store.Task = postgres.NewTaskPOstgres(pgDB)
 	}
 
-	s.db = db
-
-	return nil
-}
-
-func (s *Store) Close() {
-	s.db.Close()
+	return &store, err
 
 }
