@@ -5,5 +5,5 @@ type Task struct {
 	Title       string `json:"title" validate:"required"`
 	Status      string `json:"status"`
 	Description string `json:"description"`
-	FolderID    int    `json: "folderID"`
+	FolderID    int    `json:"folderID"`
 }
