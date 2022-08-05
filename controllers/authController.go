@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -15,6 +16,10 @@ import (
 type AuthController struct {
 	ctx     context.Context
 	service *services.Manager
+}
+
+type TokenRefresh struct {
+	Token string `json:"refreshToken"`
 }
 
 func NewAuth(ctx context.Context, store *store.Store) *AuthController {
@@ -46,7 +51,6 @@ func (ctr *AuthController) Login(ctx echo.Context) error {
 func (ctr *AuthController) Registration(ctx echo.Context) error {
 	var user models.User
 	err := ctx.Bind(&user)
-	logrus.Info(user)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Could not decode user data"))
 	}
@@ -64,5 +68,28 @@ func (ctr *AuthController) Registration(ctx echo.Context) error {
 }
 
 func (ctr *AuthController) RenewTokens(ctx echo.Context) error {
-	return nil
+	var t TokenRefresh
+
+	err := ctx.Bind(&t)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Could not decode user data"))
+	}
+	err = ctx.Validate(&t)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
+	}
+
+	token, err := ctr.service.Auth.UpdateToken(ctx.Request().Context(), t.Token)
+	if err != nil {
+		logrus.Info(err)
+		if fmt.Sprint(err) == "refreshToken not valid" {
+			return echo.NewHTTPError(http.StatusUnauthorized, err) //change
+		}
+		if fmt.Sprint(err) == "refreshToken expired" {
+			return echo.NewHTTPError(http.StatusUnauthorized, err) //change
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return ctx.JSON(http.StatusOK, token)
 }

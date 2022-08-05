@@ -58,15 +58,17 @@ func run() error {
 
 	v1 := e.Group("/api")
 	// User routes
-	taskRoutes := v1.Group("/task")
-	taskRoutes.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey: []byte(conf.SigningKey),
-	}))
-	// taskRoutes.POST("/", taskController.Create)
-	// taskRoutes.GET("/", taskController.GetAll)
-	// taskRoutes.DELETE("/:id", taskController.Delete)
+	// taskRoutes := v1.Group("/task")
+	// taskRoutes.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+	// 	SigningKey: []byte(conf.SigningKey),
+	// }))
+	// taskRoutes.POST("/", taskController.AddTask)
+	// taskRoutes.GET("/", taskController.GetAllTasks)
+	// taskRoutes.DELETE("/:id", func(ctx echo.Context) error {
+	// 	return nil
+	// })
 	// taskRoutes.PATCH("/:id", taskController.ChangeStatus)
-	// taskRoutes.PUT("/:id", taskController.UpdateTask)
+	// taskRoutes.PUT("/:id", taskController.EditTask)
 
 	// folderRoutes := v1.Group("/folder")
 	// folderRoutes.GET("/", folderController.Create)
@@ -76,7 +78,8 @@ func run() error {
 
 	v1.POST("/registration", authController.Registration)
 	v1.POST("/login", authController.Login)
-	// v1.POST("/user/token-renew", userController.TokenRenew)
+
+	e.POST("/user/token-renew", authController.RenewTokens)
 
 	s := &http.Server{
 		Addr:         conf.HTTPAddr,

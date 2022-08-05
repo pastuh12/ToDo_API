@@ -10,13 +10,15 @@ import (
 )
 
 const (
-	TTL = 15 * time.Minute
+	AccessTTL  = 15 * time.Minute
+	RefreshTTL = 7200 * time.Minute // 5 days
 )
 
 type Token struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 	ExpiresAt    int64  `json:"tokenTTL"`
+	RefreshExt   int64
 }
 
 type tokenClaims struct {
@@ -30,7 +32,7 @@ func NewToken(userId int) (*Token, error) {
 		newToken Token = Token{
 			AccessToken:  "",
 			RefreshToken: "",
-			ExpiresAt:    time.Now().Add(TTL).Unix(),
+			ExpiresAt:    time.Now().Add(AccessTTL).Unix(),
 		}
 	)
 
@@ -53,7 +55,7 @@ func (t *Token) CreateAccessToken(userId int) error {
 		jwt.SigningMethodHS256,
 		&tokenClaims{
 			jwt.StandardClaims{
-				ExpiresAt: time.Now().Add(TTL).Unix(),
+				ExpiresAt: time.Now().Add(AccessTTL).Unix(),
 				IssuedAt:  time.Now().Unix(),
 			},
 			userId,
@@ -82,6 +84,7 @@ func (t *Token) CreateRefreshToken() error {
 	}
 
 	t.RefreshToken = fmt.Sprintf("%x", b)
+	t.RefreshExt = time.Now().Add(RefreshTTL).Unix()
 
 	return nil
 }
