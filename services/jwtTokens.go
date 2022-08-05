@@ -14,9 +14,9 @@ const (
 )
 
 type Token struct {
-	AccessToken  string `json: "accessToken"`
-	RefreshToken string `json: "refreshToken"`
-	ExpiresAt    int64  `json: "tokenTTL"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	ExpiresAt    int64  `json:"tokenTTL"`
 }
 
 type tokenClaims struct {
