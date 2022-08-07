@@ -11,15 +11,15 @@ type AuthRepo interface {
 	GetUser(context.Context, *models.AuthUser) (int, error)
 	CheckSession(context.Context, *models.Session) error
 	UpdateSession(context.Context, *models.Session) error
+	GetSessionByToken(context.Context, string) (int, error)
 }
 
 type TaskRepo interface {
-	CreateTask(context.Context, models.Task) (*models.Task, error)
-	GetTask(context.Context, int) (*models.Task, error)
+	CreateTask(context.Context, *models.Task) (*models.Task, error)
 	GetAllTasks(context.Context) ([]models.Task, error)
-	EditTask(context.Context) (*models.Task, error)
-	DeleteTask(context.Context) (*models.Task, error)
-	ChangeStatus(context.Context, int, string) (*models.Task, error)
+	EditTask(context.Context, int, *models.Task) (*models.Task, error)
+	DeleteTask(context.Context, int) error
+	ChangeStatus(context.Context, int, bool) (*models.Task, error)
 }
 
 type FolderRepo interface {

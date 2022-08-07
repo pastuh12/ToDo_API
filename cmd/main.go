@@ -41,7 +41,7 @@ func run() error {
 		return errors.Wrap(err, "failed connect to database")
 	}
 
-	//	taskController := controllers.NewTask(ctx, store)
+	taskController := controllers.NewTask(ctx, store)
 	authController := controllers.NewAuth(ctx, store)
 
 	e := echo.New()
@@ -58,17 +58,15 @@ func run() error {
 
 	v1 := e.Group("/api")
 	// User routes
-	// taskRoutes := v1.Group("/task")
-	// taskRoutes.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-	// 	SigningKey: []byte(conf.SigningKey),
-	// }))
-	// taskRoutes.POST("/", taskController.AddTask)
-	// taskRoutes.GET("/", taskController.GetAllTasks)
-	// taskRoutes.DELETE("/:id", func(ctx echo.Context) error {
-	// 	return nil
-	// })
-	// taskRoutes.PATCH("/:id", taskController.ChangeStatus)
-	// taskRoutes.PUT("/:id", taskController.EditTask)
+	taskRoutes := v1.Group("/task")
+	taskRoutes.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey: []byte(conf.SigningKey),
+	}))
+	taskRoutes.POST("/", taskController.AddTask)
+	taskRoutes.GET("/", taskController.GetAllTasks)
+	taskRoutes.DELETE("/:id", taskController.DeleteTask)
+	taskRoutes.PATCH("/:id", taskController.ChangeStatus)
+	taskRoutes.PUT("/:id", taskController.EditTask)
 
 	// folderRoutes := v1.Group("/folder")
 	// folderRoutes.GET("/", folderController.Create)

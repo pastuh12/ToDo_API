@@ -14,11 +14,10 @@ type AuthServ interface {
 
 type TaskServ interface {
 	CreateTask(context.Context, *models.Task) (*models.Task, error)
-	GetTask(context.Context, int) (*models.Task, error)
 	GetAllTasks(context.Context) ([]models.Task, error)
-	EditTask(context.Context, *models.Task) (*models.Task, error)
-	DeleteTask(context.Context) (*models.Task, error)
-	ChangeStatus(context.Context, int, string) (*models.Task, error)
+	EditTask(context.Context, int, *models.Task) (*models.Task, error)
+	DeleteTask(context.Context, int) error
+	ChangeStatus(context.Context, int, bool) (*models.Task, error)
 }
 
 type FolderServ interface {
