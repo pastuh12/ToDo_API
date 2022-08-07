@@ -42,7 +42,7 @@ func (ctr *AuthController) Login(ctx echo.Context) error {
 
 	token, err := ctr.service.Auth.LoginUser(ctx.Request().Context(), &user)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "This user is not registered"))
+		return echo.NewHTTPError(http.StatusUnauthorized, errors.Wrap(err, "This user is not registered"))
 	}
 
 	return ctx.JSON(http.StatusOK, token)
