@@ -1,1 +1,0 @@
-CREATE TYPE status_type AS ENUM ('not done', 'done');
