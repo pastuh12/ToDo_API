@@ -39,8 +39,8 @@ func (s *TaskService) GetAllTasks(ctx context.Context) ([]models.Task, error) {
 	return taskList, nil
 }
 
-func (s *TaskService) EditTask(ctx context.Context, taskID int, task *models.Task) (*models.Task, error) {
-	task, err := s.store.Task.EditTask(ctx, taskID, task)
+func (s *TaskService) EditTask(ctx context.Context, task *models.Task) (*models.Task, error) {
+	task, err := s.store.Task.EditTask(ctx, task)
 	if err != nil {
 		if fmt.Sprint(err) == "no rows in result set" {
 			return nil, errors.New("task does not exist")
@@ -51,9 +51,9 @@ func (s *TaskService) EditTask(ctx context.Context, taskID int, task *models.Tas
 	return task, nil
 }
 
-func (s *TaskService) ChangeStatus(ctx context.Context, id int, newStatus bool) (*models.Task, error) {
+func (s *TaskService) ChangeStatus(ctx context.Context, taskID int, status bool) (*models.Task, error) {
 
-	task, err := s.store.Task.ChangeStatus(ctx, id, newStatus)
+	task, err := s.store.Task.ChangeStatus(ctx, taskID, status)
 	if err != nil {
 		if fmt.Sprint(err) == "no rows in result set" {
 			return nil, errors.New("task does not exist")

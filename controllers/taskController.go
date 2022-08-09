@@ -40,12 +40,12 @@ func (ctr *TaskController) AddTask(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
 	}
 
-	resultTask, err := ctr.service.Task.CreateTask(ctx.Request().Context(), &task)
+	_, err = ctr.service.Task.CreateTask(ctx.Request().Context(), &task)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return ctx.JSON(http.StatusOK, resultTask)
+	return ctx.JSON(http.StatusCreated, task)
 }
 
 func (ctr *TaskController) GetAllTasks(ctx echo.Context) error {
@@ -60,7 +60,8 @@ func (ctr *TaskController) GetAllTasks(ctx echo.Context) error {
 
 func (ctr *TaskController) EditTask(ctx echo.Context) error {
 	var task models.Task
-	taskID, err := strconv.Atoi(ctx.Param("id"))
+	var err error
+	task.ID, err = strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "bad param not exist")
 	}
@@ -75,12 +76,12 @@ func (ctr *TaskController) EditTask(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
 	}
 
-	resultTask, err := ctr.service.Task.EditTask(ctx.Request().Context(), taskID, &task)
+	_, err = ctr.service.Task.EditTask(ctx.Request().Context(), &task)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "ошибка"))
 	}
 
-	return ctx.JSON(http.StatusOK, resultTask)
+	return ctx.JSON(http.StatusOK, task)
 }
 
 func (ctr *TaskController) ChangeStatus(ctx echo.Context) error {

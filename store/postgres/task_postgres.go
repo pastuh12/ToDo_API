@@ -20,24 +20,17 @@ func NewTaskPostgres(s *PostgresDB) *TaskPostgres {
 	}
 }
 
-func (r *TaskPostgres) GetTaskByID(ctx context.Context, taskID int) (*models.Task, error) {
-	var task models.Task
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = $1", tableTasks)
-	err := r.store.db.QueryRow(query, taskID).Scan(
-		&task.ID,
-		&task.Title,
-		&task.Description,
-		&task.Status,
-		&task.FolderID,
-	)
+func (r *TaskPostgres) DeleteTasksByFolderID(ctx context.Context, folderID int) error {
+	query := fmt.Sprintf("DELETE FROM %s WHERE folder_id = $1", tableTasks)
+	err := r.store.db.QueryRow(query, folderID).Scan()
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("task does not exist")
+			return nil
 		}
-		return nil, err
+		return errors.Wrap(err, "failed deletion task from folder")
 	}
 
-	return &task, nil
+	return nil
 }
 
 func (r *TaskPostgres) CreateTask(ctx context.Context, task *models.Task) (*models.Task, error) {
@@ -83,7 +76,7 @@ func (r *TaskPostgres) GetAllTasks(ctx context.Context) ([]models.Task, error) {
 	return taskList, nil
 }
 
-func (r *TaskPostgres) EditTask(ctx context.Context, taskID int, task *models.Task) (*models.Task, error) {
+func (r *TaskPostgres) EditTask(ctx context.Context, task *models.Task) (*models.Task, error) {
 	query := fmt.Sprintf(
 		"UPDATE %s SET title = $1, description = $2, status = $3, folder_id = $4 WHERE id = $5 RETURNING id",
 		tableTasks,
@@ -94,21 +87,19 @@ func (r *TaskPostgres) EditTask(ctx context.Context, taskID int, task *models.Ta
 		task.Description,
 		task.Status,
 		task.FolderID,
-		taskID,
-	).Scan(&taskID)
+		task.ID,
+	).Scan(task.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("task does not exist")
 		}
 		return nil, err
 	}
-	task.ID = taskID
 	return task, nil
 }
 
 func (r *TaskPostgres) ChangeStatus(ctx context.Context, taskID int, status bool) (*models.Task, error) {
 	var task models.Task
-
 	query := fmt.Sprintf("UPDATE %s SET status = $1 WHERE id = $2 RETURNING *", tableTasks)
 	err := r.store.db.QueryRow(query, status, taskID).Scan(
 		&task.ID,
