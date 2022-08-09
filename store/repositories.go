@@ -17,14 +17,14 @@ type AuthRepo interface {
 type TaskRepo interface {
 	CreateTask(context.Context, *models.Task) (*models.Task, error)
 	GetAllTasks(context.Context) ([]models.Task, error)
-	EditTask(context.Context, int, *models.Task) (*models.Task, error)
+	EditTask(context.Context, *models.Task) (*models.Task, error)
 	DeleteTask(context.Context, int) error
 	ChangeStatus(context.Context, int, bool) (*models.Task, error)
 }
 
 type FolderRepo interface {
-	CreateFolder(context.Context, models.Folder) (*models.Folder, error)
-	GetFolder(context.Context, int) (*models.Folder, error)
+	CreateFolder(context.Context, *models.Folder) (*models.Folder, error)
 	GetAllFolders(context.Context) ([]models.Folder, error)
 	DeleteFolder(context.Context, int) error
+	EditFolder(context.Context, *models.Folder) (*models.Folder, error)
 }

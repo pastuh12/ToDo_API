@@ -43,6 +43,7 @@ func run() error {
 
 	taskController := controllers.NewTask(ctx, store)
 	authController := controllers.NewAuth(ctx, store)
+	folderController := controllers.NewFolderController(ctx, store)
 
 	e := echo.New()
 	e.Validator = validator.NewValidator()
@@ -68,11 +69,14 @@ func run() error {
 	taskRoutes.PATCH("/:id", taskController.ChangeStatus)
 	taskRoutes.PUT("/:id", taskController.EditTask)
 
-	// folderRoutes := v1.Group("/folder")
-	// folderRoutes.GET("/", folderController.Create)
-	// folderRoutes.POST("/", folderController.Create)
-	// folderRoutes.DELETE("/:id", folderController.Delete)
-	// folderRoutes.PATCH("/:id", folderController.ChangeTitle)
+	folderRoutes := v1.Group("/folder")
+	folderRoutes.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey: []byte(conf.SigningKey),
+	}))
+	folderRoutes.GET("/", folderController.GetAllFolders)
+	folderRoutes.POST("/", folderController.CreateFolder)
+	folderRoutes.DELETE("/:id", folderController.DeleteFolder)
+	folderRoutes.PATCH("/:id", folderController.ChangeTitle)
 
 	v1.POST("/registration", authController.Registration)
 	v1.POST("/login", authController.Login)

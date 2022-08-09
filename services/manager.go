@@ -14,8 +14,8 @@ type Manager struct {
 
 func New(ctx context.Context, store *store.Store) *Manager {
 	return &Manager{
-		Auth: NewAuthService(ctx, store),
-		Task: NewTaskService(ctx, store),
-		// Folder: NewFolderService(ctx, store),
+		Auth:   NewAuthService(ctx, store),
+		Task:   NewTaskService(ctx, store),
+		Folder: NewFolderService(ctx, store),
 	}
 }
