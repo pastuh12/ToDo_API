@@ -7,7 +7,6 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 	"github.com/todo_api/services"
 	"github.com/todo_api/store"
@@ -81,7 +80,6 @@ func (ctr *AuthController) RenewTokens(ctx echo.Context) error {
 
 	token, err := ctr.service.Auth.UpdateToken(ctx.Request().Context(), t.Token)
 	if err != nil {
-		logrus.Info(err)
 		if fmt.Sprint(err) == "refreshToken not valid" {
 			return echo.NewHTTPError(http.StatusUnauthorized, err) //change
 		}

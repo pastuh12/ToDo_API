@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 )
 
@@ -76,8 +75,6 @@ func (r *FolderPostgres) DeleteFolder(ctx context.Context, folderID int) error {
 }
 
 func (r *FolderPostgres) EditFolder(ctx context.Context, folder *models.Folder) (*models.Folder, error) {
-	logrus.Info(folder.ID)
-
 	query := fmt.Sprintf("UPDATE %s SET title = $1 WHERE id = $2 RETURNING title", tableFolders)
 	err := r.store.db.QueryRow(query, folder.Title, folder.ID).Scan(&folder.Title)
 	if err != nil {

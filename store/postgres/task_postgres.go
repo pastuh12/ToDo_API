@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 )
 
@@ -35,7 +34,6 @@ func (r *TaskPostgres) DeleteTasksByFolderID(ctx context.Context, folderID int) 
 
 func (r *TaskPostgres) CreateTask(ctx context.Context, task *models.Task) (*models.Task, error) {
 	var id int
-	logrus.Info(task)
 	query := fmt.Sprintf("INSERT INTO %s (title, description, folder_id) VALUES($1, $2, $3) RETURNING id", tableTasks)
 	err := r.store.db.QueryRow(query, task.Title, task.Description, task.FolderID).Scan(&id)
 	if err != nil {

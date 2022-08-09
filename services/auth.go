@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 	"github.com/todo_api/store"
 )
@@ -54,8 +53,6 @@ func (s *AuthService) LoginUser(ctx context.Context, user *models.AuthUser) (*To
 		return nil, err
 	}
 
-	logrus.Info(token)
-
 	return token, nil
 }
 
@@ -64,8 +61,6 @@ func (s *AuthService) CreateSession(ctx context.Context, id int) (*Token, error)
 	if err != nil {
 		return nil, errors.Wrap(err, "token not created")
 	}
-
-	logrus.Info(token)
 
 	session := s.NewSession(id, token)
 

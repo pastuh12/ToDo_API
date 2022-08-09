@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 )
 
@@ -94,7 +93,6 @@ func (r *AuthPostgres) GetSessionByToken(ctx context.Context, oldRefreshToken st
 
 	err := r.store.db.QueryRow(query, oldRefreshToken).Scan(&id, &userID, &refreshExt)
 	if err != nil {
-		logrus.Info(err)
 		if err == sql.ErrNoRows {
 			return 0, errors.New("refreshToken not valid")
 		}

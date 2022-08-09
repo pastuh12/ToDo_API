@@ -9,7 +9,6 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 	"github.com/todo_api/services"
 	"github.com/todo_api/store"
@@ -53,7 +52,6 @@ func (ctr *FolderController) GetAllFolders(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	logrus.Info(folderList)
 	return ctx.JSON(http.StatusOK, folderList)
 }
 
