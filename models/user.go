@@ -4,7 +4,7 @@ type User struct {
 	ID           int    `json:"id"`
 	EmailAddress string `json:"email_address" validate:"required"`
 	Password     string `json:"password" validate:"required"`
-	Name         string `json:"name"`
+	Name         string `json:"name" validate:"required"`
 }
 
 type AuthUser struct {

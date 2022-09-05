@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	AccessTTL  = 15 * time.Minute
+	AccessTTL  = 1500 * time.Minute //исправить для прода на 15
 	RefreshTTL = 7200 * time.Minute // 5 days
 )
 
