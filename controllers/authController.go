@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/todo_api/models"
 	"github.com/todo_api/services"
-	"github.com/todo_api/store"
 )
 
 type AuthController struct {
@@ -18,13 +17,13 @@ type AuthController struct {
 }
 
 type TokenRefresh struct {
-	Token string `json:"refreshToken"`
+	Token string `json:"refreshToken" validate:"required"`
 }
 
-func NewAuth(ctx context.Context, store *store.Store) *AuthController {
+func NewAuth(ctx context.Context, service *services.Manager) *AuthController {
 	return &AuthController{
 		ctx:     ctx,
-		service: services.New(ctx, store),
+		service: service,
 	}
 }
 
@@ -60,7 +59,7 @@ func (ctr *AuthController) Registration(ctx echo.Context) error {
 
 	token, err := ctr.service.Auth.CreateUser(ctx.Request().Context(), &user)
 	if err != nil {
-		return errors.Wrap(err, "failed user registration")
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "failed user registration"))
 	}
 
 	return ctx.JSON(http.StatusOK, token)

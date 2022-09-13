@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/todo_api/config"
 	"github.com/todo_api/controllers"
+	"github.com/todo_api/services"
 	"github.com/todo_api/store"
 	"github.com/todo_api/validator"
 )
@@ -41,9 +42,11 @@ func run() error {
 		return errors.Wrap(err, "failed connect to database")
 	}
 
-	taskController := controllers.NewTask(ctx, store)
-	authController := controllers.NewAuth(ctx, store)
-	folderController := controllers.NewFolderController(ctx, store)
+	services := services.New(ctx, store)
+
+	taskController := controllers.NewTask(ctx, services)
+	authController := controllers.NewAuth(ctx, services)
+	folderController := controllers.NewFolderController(ctx, services)
 
 	e := echo.New()
 	e.Validator = validator.NewValidator()

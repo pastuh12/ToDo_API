@@ -2,15 +2,14 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 	"github.com/todo_api/services"
-	"github.com/todo_api/store"
 )
 
 type TaskController struct {
@@ -19,13 +18,13 @@ type TaskController struct {
 }
 
 type Status struct {
-	St bool `json:"status"`
+	St bool `json:"status" validate:"required"`
 }
 
-func NewTask(ctx context.Context, store *store.Store) *TaskController {
+func NewTask(ctx context.Context, services *services.Manager) *TaskController {
 	return &TaskController{
 		ctx:     ctx,
-		service: services.New(ctx, store),
+		service: services,
 	}
 }
 
@@ -40,9 +39,11 @@ func (ctr *TaskController) AddTask(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
 	}
 
+	logrus.Info(task)
+
 	_, err = ctr.service.Task.CreateTask(ctx.Request().Context(), &task)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	return ctx.JSON(http.StatusCreated, task)
@@ -52,7 +53,7 @@ func (ctr *TaskController) GetAllTasks(ctx echo.Context) error {
 
 	taskList, err := ctr.service.Task.GetAllTasks(ctx.Request().Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	return ctx.JSON(http.StatusOK, taskList)
@@ -63,7 +64,7 @@ func (ctr *TaskController) EditTask(ctx echo.Context) error {
 	var err error
 	task.ID, err = strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "bad param not exist")
+		return echo.NewHTTPError(http.StatusBadRequest, "bad param not exist")
 	}
 
 	err = ctx.Bind(&task)
@@ -78,7 +79,7 @@ func (ctr *TaskController) EditTask(ctx echo.Context) error {
 
 	_, err = ctr.service.Task.EditTask(ctx.Request().Context(), &task)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "ошибка"))
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "service error"))
 	}
 
 	return ctx.JSON(http.StatusOK, task)
@@ -97,6 +98,11 @@ func (ctr *TaskController) ChangeStatus(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Could not decode status"))
 	}
 
+	err = ctx.Validate(&status)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
+	}
+
 	task, err := ctr.service.Task.ChangeStatus(ctx.Request().Context(), id, status.St)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
@@ -113,8 +119,8 @@ func (ctr *TaskController) DeleteTask(ctx echo.Context) error {
 
 	err = ctr.service.Task.DeleteTask(ctx.Request().Context(), id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "service error"))
 	}
 
-	return echo.NewHTTPError(http.StatusOK, fmt.Sprintf("task with id %d was deleted", id))
+	return nil
 }
