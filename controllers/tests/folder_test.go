@@ -1,0 +1,348 @@
+package tests
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/evt/rest-api-example/lib/types"
+	"github.com/golang/mock/gomock"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
+	"github.com/stretchr/testify/assert"
+	"github.com/todo_api/config"
+	"github.com/todo_api/controllers"
+	"github.com/todo_api/models"
+	"github.com/todo_api/services"
+	mock_services "github.com/todo_api/services/mocks"
+	"github.com/todo_api/validator"
+)
+
+func TestController_createFolder(t *testing.T) {
+	type MockBehavior func(ctx context.Context, s *mock_services.MockFolderServ)
+
+	testFolder := &models.Folder{
+		Title: "Folder",
+	}
+
+	testTable := []struct {
+		name         string
+		inputBody    string
+		expectations MockBehavior
+		err          error
+		code         int
+	}{
+		{
+			name:      "ok",
+			inputBody: `{"title": "Folder"}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {
+				s.EXPECT().CreateFolder(gomock.All(), testFolder).Return(
+					testFolder, nil,
+				)
+			},
+			err:  nil,
+			code: http.StatusCreated,
+		},
+		{
+			name:         "without data",
+			inputBody:    `{}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {},
+			err:          errors.New("code=422, message=Key: 'Folder.Title' Error:Field validation for 'Title' failed on the 'required' tag"),
+			code:         http.StatusUnprocessableEntity,
+		},
+		{
+			name:         "bad request",
+			inputBody:    `{some"}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {},
+			err:          errors.New("code=400, message=Could not decode user data: code=400, message=Syntax error: offset=2, error=invalid character 's' looking for beginning of object key string"),
+			code:         http.StatusBadRequest,
+		},
+		{
+			name:      "service error",
+			inputBody: `{"title": "Folder"}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {
+				s.EXPECT().CreateFolder(gomock.All(), testFolder).Return(nil, types.ErrBadRequest)
+			},
+			err:  errors.New("code=400, message=bad request"),
+			code: http.StatusBadRequest,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Logf("running %v", testCase.name)
+
+		e := echo.New()
+		e.Validator = validator.NewValidator()
+		r, err := http.NewRequest(echo.POST, "/users/", strings.NewReader(testCase.inputBody))
+		if err != nil {
+			t.Fatal("could not create request ", err)
+		}
+		r.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		w := httptest.NewRecorder()
+		ctx := e.NewContext(r, w)
+
+		c := gomock.NewController(t)
+
+		svc := mock_services.NewMockFolderServ(c)
+		testCase.expectations(ctx.Request().Context(), svc)
+		d := controllers.NewFolderController(ctx.Request().Context(), &services.Manager{Folder: svc})
+		err = d.CreateFolder(ctx)
+		assert.Equal(t, testCase.err == nil, err == nil)
+
+		if err != nil {
+			if testCase.err != nil {
+				assert.Equal(t, testCase.err.Error(), err.Error())
+			} else {
+				t.Errorf("Expected no error, found: %s", err.Error())
+			}
+		} else {
+			assert.Equal(t, testCase.code, w.Code)
+		}
+	}
+}
+
+func TestController_getAllFolder(t *testing.T) {
+	type MockBehavior func(ctx context.Context, s *mock_services.MockFolderServ)
+	testTable := []struct {
+		name         string
+		expectations MockBehavior
+		err          error
+		code         int
+	}{
+		{
+			name: "ok",
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {
+				s.EXPECT().GetAllFolders(gomock.All()).Return(
+					[]models.Folder{}, nil,
+				)
+			},
+			err:  nil,
+			code: http.StatusOK,
+		},
+		{
+			name: "service error",
+			expectations: func(ctx context.Context, svc *mock_services.MockFolderServ) {
+				svc.EXPECT().GetAllFolders(ctx).Return(nil, types.ErrBadRequest)
+			},
+			err:  errors.New("code=400, message=bad request"),
+			code: http.StatusBadRequest,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Logf("running %v", testCase.name)
+
+		e := echo.New()
+		e.Validator = validator.NewValidator()
+		group := e.Group("/")
+		group.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+			SigningKey: []byte(config.Get().SigningKey),
+		}))
+		r, err := http.NewRequest(echo.GET, "/", strings.NewReader(""))
+		if err != nil {
+			t.Fatal("could not create request ", err)
+		}
+		r.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		w := httptest.NewRecorder()
+		ctx := e.NewContext(r, w)
+
+		c := gomock.NewController(t)
+
+		svc := mock_services.NewMockFolderServ(c)
+		testCase.expectations(ctx.Request().Context(), svc)
+		d := controllers.NewFolderController(ctx.Request().Context(), &services.Manager{Folder: svc})
+		err = d.GetAllFolders(ctx)
+		assert.Equal(t, testCase.err == nil, err == nil)
+
+		if err != nil {
+			if testCase.err != nil {
+				assert.Equal(t, testCase.err.Error(), err.Error())
+			} else {
+				t.Errorf("Expected no error, found: %s", err.Error())
+			}
+		} else {
+			assert.Equal(t, testCase.code, w.Code)
+		}
+	}
+}
+
+func TestController_changeTitle(t *testing.T) {
+	type MockBehavior func(ctx context.Context, s *mock_services.MockFolderServ)
+
+	testFolder := &models.Folder{
+		ID:    0,
+		Title: "Folder",
+	}
+
+	testTable := []struct {
+		name         string
+		inputBody    string
+		expectations MockBehavior
+		err          error
+		code         int
+	}{
+		{
+			name:      "ok",
+			inputBody: `{"title": "Folder"}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {
+				s.EXPECT().ChangeTitle(gomock.All(), testFolder).Return(testFolder, nil)
+			},
+			err:  nil,
+			code: http.StatusOK,
+		},
+		{
+			name:         "without path param id",
+			inputBody:    `{"title": "Folder"}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {},
+			err:          errors.New(`code=404, message=strconv.Atoi: parsing "": invalid syntax`),
+			code:         http.StatusBadRequest,
+		},
+		{
+			name:         "without data",
+			inputBody:    `{}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {},
+			err:          errors.New("code=422, message=Key: 'Folder.Title' Error:Field validation for 'Title' failed on the 'required' tag"),
+			code:         http.StatusBadRequest,
+		},
+		{
+			name:         "bad request",
+			expectations: func(ctx context.Context, svc *mock_services.MockFolderServ) {},
+			inputBody:    `{some"}`,
+			err:          errors.New("code=400, message=Could not decode user data: code=400, message=Syntax error: offset=2, error=invalid character 's' looking for beginning of object key string"),
+			code:         http.StatusBadRequest,
+		},
+		{
+			name: "service error",
+			expectations: func(ctx context.Context, svc *mock_services.MockFolderServ) {
+				svc.EXPECT().ChangeTitle(ctx, testFolder).Return(nil, types.ErrBadRequest)
+			},
+			inputBody: `{"title": "Folder"}`,
+			err:       errors.New("code=400, message=bad request"),
+			code:      http.StatusBadRequest,
+		},
+	}
+
+	for i, testCase := range testTable {
+		t.Logf("running %v", testCase.name)
+
+		e := echo.New()
+		e.Validator = validator.NewValidator()
+		group := e.Group("/")
+		group.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+			SigningKey: []byte(config.Get().SigningKey),
+		}))
+		r, err := http.NewRequest(echo.GET, "/:id", strings.NewReader(testCase.inputBody))
+		if err != nil {
+			t.Fatal("could not create request ", err)
+		}
+		r.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		w := httptest.NewRecorder()
+
+		ctx := e.NewContext(r, w)
+		if i != 1 {
+			ctx.SetParamNames("id")
+			ctx.SetParamValues("1")
+		}
+
+		c := gomock.NewController(t)
+		svc := mock_services.NewMockFolderServ(c)
+		testCase.expectations(ctx.Request().Context(), svc)
+		d := controllers.NewFolderController(ctx.Request().Context(), &services.Manager{Folder: svc})
+		err = d.ChangeTitle(ctx)
+		assert.Equal(t, testCase.err == nil, err == nil)
+
+		if err != nil {
+			if testCase.err != nil {
+				assert.Equal(t, testCase.err.Error(), err.Error())
+			} else {
+				t.Errorf("Expected no error, found: %s", err.Error())
+			}
+		} else {
+			assert.Equal(t, testCase.code, w.Code)
+		}
+	}
+}
+
+func TestController_deleteFolder(t *testing.T) {
+	type MockBehavior func(ctx context.Context, s *mock_services.MockFolderServ)
+
+	testTable := []struct {
+		name         string
+		inputBody    string
+		expectations MockBehavior
+		err          error
+		code         int
+	}{
+		{
+			name:      "ok",
+			inputBody: `{"status": true}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {
+				s.EXPECT().DeleteFolder(gomock.All(), 1).Return(nil)
+			},
+			err:  nil,
+			code: http.StatusOK,
+		},
+		{
+			name:         "without path param id",
+			inputBody:    `{"status": true}`,
+			expectations: func(ctx context.Context, s *mock_services.MockFolderServ) {},
+			err:          errors.New(`code=404, message=Not Found`),
+			code:         http.StatusBadRequest,
+		},
+		{
+			name: "service error",
+			expectations: func(ctx context.Context, svc *mock_services.MockFolderServ) {
+				svc.EXPECT().DeleteFolder(ctx, 1).Return(types.ErrBadRequest)
+			},
+			inputBody: `{}`,
+			err:       errors.New("code=400, message=bad request"),
+			code:      http.StatusBadRequest,
+		},
+	}
+
+	for i, testCase := range testTable {
+		t.Logf("running %v", testCase.name)
+
+		e := echo.New()
+		e.Validator = validator.NewValidator()
+		group := e.Group("/")
+		group.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+			SigningKey: []byte(config.Get().SigningKey),
+		}))
+		r, err := http.NewRequest(echo.GET, "/:id", strings.NewReader(testCase.inputBody))
+		if err != nil {
+			t.Fatal("could not create request ", err)
+		}
+		r.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		w := httptest.NewRecorder()
+
+		ctx := e.NewContext(r, w)
+		if i != 1 {
+			ctx.SetParamNames("id")
+			ctx.SetParamValues("1")
+		}
+
+		c := gomock.NewController(t)
+		t.Logf("i: %v", i)
+		svc := mock_services.NewMockFolderServ(c)
+		testCase.expectations(ctx.Request().Context(), svc)
+		d := controllers.NewFolderController(ctx.Request().Context(), &services.Manager{Folder: svc})
+		err = d.DeleteFolder(ctx)
+		assert.Equal(t, testCase.err == nil, err == nil)
+
+		if err != nil {
+			if testCase.err != nil {
+				assert.Equal(t, testCase.err.Error(), err.Error())
+			} else {
+				t.Errorf("Expected no error, found: %s", err.Error())
+			}
+		} else {
+			assert.Equal(t, testCase.code, w.Code)
+		}
+	}
+}
