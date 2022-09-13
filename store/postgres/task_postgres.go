@@ -34,8 +34,13 @@ func (r *TaskPostgres) DeleteTasksByFolderID(ctx context.Context, folderID int) 
 
 func (r *TaskPostgres) CreateTask(ctx context.Context, task *models.Task) (*models.Task, error) {
 	var id int
-	query := fmt.Sprintf("INSERT INTO %s (title, description, folder_id) VALUES($1, $2, $3) RETURNING id", tableTasks)
-	err := r.store.db.QueryRow(query, task.Title, task.Description, task.FolderID).Scan(&id)
+	var err error
+	query := fmt.Sprintf("INSERT INTO %s (title, status, description, folder_id) VALUES($1, $2, $3, $4) RETURNING id", tableTasks)
+	if task.FolderID != 0 {
+		err = r.store.db.QueryRow(query, task.Title, task.Status, task.Description, task.FolderID).Scan(&id)
+	} else {
+		err = r.store.db.QueryRow(query, task.Title, task.Status, task.Description, nil).Scan(&id)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create task")
 	}
