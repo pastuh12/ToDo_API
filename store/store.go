@@ -30,8 +30,8 @@ func New(ctx context.Context, conf *config.Config) (*Store, error) {
 	if pgDB != nil {
 		store.Postgres = pgDB
 		store.Authtorization = postgres.NewAuthPostgres(pgDB)
-		// store.Folder = postgres.NewFolderPostgres(pgDB)
-		// store.Task = postgres.NewTaskPOstgres(pgDB)
+		store.Folder = postgres.NewFolderPostgres(pgDB)
+		store.Task = postgres.NewTaskPostgres(pgDB)
 	}
 
 	return &store, err

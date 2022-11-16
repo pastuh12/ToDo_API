@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/todo_api/config"
 	"github.com/todo_api/controllers"
+	"github.com/todo_api/services"
 	"github.com/todo_api/store"
 	"github.com/todo_api/validator"
 )
@@ -41,8 +42,11 @@ func run() error {
 		return errors.Wrap(err, "failed connect to database")
 	}
 
-	//	taskController := controllers.NewTask(ctx, store)
-	authController := controllers.NewAuth(ctx, store)
+	services := services.New(ctx, store)
+
+	taskController := controllers.NewTask(ctx, services)
+	authController := controllers.NewAuth(ctx, services)
+	folderController := controllers.NewFolderController(ctx, services)
 
 	e := echo.New()
 	e.Validator = validator.NewValidator()
@@ -62,21 +66,25 @@ func run() error {
 	taskRoutes.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey: []byte(conf.SigningKey),
 	}))
-	// taskRoutes.POST("/", taskController.Create)
-	// taskRoutes.GET("/", taskController.GetAll)
-	// taskRoutes.DELETE("/:id", taskController.Delete)
-	// taskRoutes.PATCH("/:id", taskController.ChangeStatus)
-	// taskRoutes.PUT("/:id", taskController.UpdateTask)
+	taskRoutes.POST("/", taskController.AddTask)
+	taskRoutes.GET("/", taskController.GetAllTasks)
+	taskRoutes.DELETE("/:id", taskController.DeleteTask)
+	taskRoutes.PATCH("/:id", taskController.ChangeStatus)
+	taskRoutes.PUT("/:id", taskController.EditTask)
 
-	// folderRoutes := v1.Group("/folder")
-	// folderRoutes.GET("/", folderController.Create)
-	// folderRoutes.POST("/", folderController.Create)
-	// folderRoutes.DELETE("/:id", folderController.Delete)
-	// folderRoutes.PATCH("/:id", folderController.ChangeTitle)
+	folderRoutes := v1.Group("/folder")
+	folderRoutes.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey: []byte(conf.SigningKey),
+	}))
+	folderRoutes.GET("/", folderController.GetAllFolders)
+	folderRoutes.POST("/", folderController.CreateFolder)
+	folderRoutes.DELETE("/:id", folderController.DeleteFolder)
+	folderRoutes.PATCH("/:id", folderController.ChangeTitle)
 
 	v1.POST("/registration", authController.Registration)
 	v1.POST("/login", authController.Login)
-	// v1.POST("/user/token-renew", userController.TokenRenew)
+
+	e.POST("/user/token-renew", authController.RenewTokens)
 
 	s := &http.Server{
 		Addr:         conf.HTTPAddr,

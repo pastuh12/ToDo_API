@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/todo_api/models"
 	"github.com/todo_api/store"
 )
@@ -50,27 +49,6 @@ func (s *AuthService) LoginUser(ctx context.Context, user *models.AuthUser) (*To
 	}
 
 	token, err := s.CreateSession(ctx, id)
-
-	logrus.Info(token)
-
-	return token, nil
-}
-
-func (s *AuthService) CreateSession(ctx context.Context, id int) (*Token, error) {
-	var session models.Session
-
-	token, err := NewToken(id)
-	if err != nil {
-		return nil, errors.Wrap(err, "token not created")
-	}
-
-	logrus.Info(token)
-
-	session.UserID = id
-	session.RefreshToken = token.RefreshToken
-	session.ExpiresAt = token.ExpiresAt
-
-	err = s.store.Authtorization.SetSession(ctx, &session)
 	if err != nil {
 		return nil, err
 	}
@@ -78,19 +56,39 @@ func (s *AuthService) CreateSession(ctx context.Context, id int) (*Token, error)
 	return token, nil
 }
 
-func (s *AuthService) UpdateToken(ctx context.Context, id int) (*Token, error) {
-	var session models.Session
-
+func (s *AuthService) CreateSession(ctx context.Context, id int) (*Token, error) {
 	token, err := NewToken(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "token not created")
 	}
 
-	session.UserID = id
-	session.RefreshToken = token.RefreshToken
-	session.ExpiresAt = token.ExpiresAt
+	session := s.NewSession(id, token)
 
-	err = s.store.Authtorization.UpdateSession(ctx, &session)
+	err = s.store.Authtorization.CheckSession(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func (s *AuthService) UpdateToken(ctx context.Context, oldRefreshToken string) (*Token, error) {
+	userID, err := s.store.Authtorization.GetSessionByToken(ctx, oldRefreshToken)
+	if err != nil {
+		if errors.Cause(err) == errors.New("no rows in result set") {
+			return nil, errors.New("not valid refreshToken")
+		}
+		return nil, err
+	}
+
+	token, err := NewToken(userID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Token not created")
+	}
+
+	session := s.NewSession(userID, token)
+
+	err = s.store.Authtorization.CheckSession(ctx, session)
 	if err != nil {
 		return nil, err
 	}
@@ -104,4 +102,12 @@ func (s *AuthService) EncryptPassword(str string) string {
 	hashBytes := hash.Sum([]byte(salt))
 
 	return fmt.Sprintf("%x", hashBytes)
+}
+
+func (s *AuthService) NewSession(id int, token *Token) *models.Session {
+	return &models.Session{
+		UserID:       id,
+		RefreshToken: token.RefreshToken,
+		ExpiresAt:    token.RefreshExt,
+	}
 }
